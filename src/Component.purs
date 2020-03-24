@@ -25,11 +25,11 @@ data Action = UpdateInput InputSource String
 handleAction ∷ forall o m. Action -> H.HalogenM State Action () o m Unit
 handleAction = case _ of
   UpdateInput Foo v ->
-    H.modify_ \s -> s { foo = v }
+    H.modify_ _{ foo = v }
   UpdateInput Bar v ->
-    H.modify_ \s -> s { bar = v }
+    H.modify_ _{ bar = v }
   UpdateInput Baz v ->
-    H.modify_ \s -> s { baz = v }
+    H.modify_ _{ baz = v }
 
 mkInput :: forall a. String -> InputSource -> HH.HTML a Action
 mkInput value source =
