@@ -15,36 +15,27 @@ type State =
   , baz :: String
   }
 
-data InputSource
-  = Foo
-  | Bar
-  | Baz
-
-data Action = UpdateInput InputSource String
+data Action = UpdateState (State -> State)
 
 handleAction ∷ forall o m. Action -> H.HalogenM State Action () o m Unit
 handleAction = case _ of
-  UpdateInput Foo v ->
-    H.modify_ _{ foo = v }
-  UpdateInput Bar v ->
-    H.modify_ _{ bar = v }
-  UpdateInput Baz v ->
-    H.modify_ _{ baz = v }
+  UpdateState updateFunc ->
+    H.modify_ updateFunc
 
-mkInput :: forall a. String -> InputSource -> HH.HTML a Action
-mkInput value source =
+mkInput :: forall a. String -> (String -> State -> State) -> HH.HTML a Action
+mkInput value inlineUpdate =
   HH.input
   [ HP.type_ HP.InputNumber
   , HP.value value
-  , HE.onValueChange \v -> Just $ UpdateInput source v
+  , HE.onValueChange \v -> Just $ UpdateState $ inlineUpdate v
   ]
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
   HH.div_
-    [ HH.div_ [ mkInput state.foo Foo ]
-    , HH.div_ [ mkInput state.bar Bar ]
-    , HH.div_ [ mkInput state.baz Baz ]
+    [ HH.div_ [ mkInput state.foo ( \v s -> s{ foo = v } ) ]
+    , HH.div_ [ mkInput state.bar ( \v s -> s{ bar = v } ) ]
+    , HH.div_ [ mkInput state.baz ( \v s -> s{ baz = v } ) ]
     -- Print back to verify state
     , HH.div_ [ HH.text $ foldMap (\s -> s <> " ") [ state.foo, state.bar, state.baz ] ]
     ]
