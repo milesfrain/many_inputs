@@ -20,12 +20,11 @@ type StateRows =
 
 type State = Record StateRows
 
-data Action = UpdateState (State -> State)
+data Action = UpdateState State
 
 handleAction ∷ forall o m. Action -> H.HalogenM State Action () o m Unit
 handleAction = case _ of
-  UpdateState updateFunc ->
-    H.modify_ updateFunc
+  UpdateState s -> H.put s
 
 mkInput :: forall r l a. IsSymbol l => Cons l String r StateRows =>
   SProxy l -> State -> HH.HTML a Action
@@ -33,7 +32,7 @@ mkInput sym st =
   HH.input
   [ HP.type_ HP.InputNumber
   , HP.value $ Record.get sym st
-  , HE.onValueChange \v -> Just $ UpdateState \s -> Record.set sym v s
+  , HE.onValueChange \v -> Just $ UpdateState $ Record.set sym v st
   ]
 
 render :: forall m. State -> H.ComponentHTML Action () m
