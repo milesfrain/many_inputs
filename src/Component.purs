@@ -4,16 +4,21 @@ import Prelude
 
 import Data.Foldable (foldMap)
 import Data.Maybe (Maybe(..))
+import Data.Symbol (class IsSymbol, SProxy(..))
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Record as Record
+import Prim.Row (class Cons)
 
-type State =
-  { foo :: String
+type StateRows =
+  ( foo :: String
   , bar :: String
   , baz :: String
-  }
+  )
+
+type State = Record StateRows
 
 data Action = UpdateState (State -> State)
 
@@ -22,20 +27,21 @@ handleAction = case _ of
   UpdateState updateFunc ->
     H.modify_ updateFunc
 
-mkInput :: forall a. String -> (String -> State -> State) -> HH.HTML a Action
-mkInput value inlineUpdate =
+mkInput :: forall r l a. IsSymbol l => Cons l String r StateRows =>
+  SProxy l -> State -> HH.HTML a Action
+mkInput sym st =
   HH.input
   [ HP.type_ HP.InputNumber
-  , HP.value value
-  , HE.onValueChange \v -> Just $ UpdateState $ inlineUpdate v
+  , HP.value $ Record.get sym st
+  , HE.onValueChange \v -> Just $ UpdateState \s -> Record.set sym v s
   ]
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
   HH.div_
-    [ HH.div_ [ mkInput state.foo ( \v s -> s{ foo = v } ) ]
-    , HH.div_ [ mkInput state.bar ( \v s -> s{ bar = v } ) ]
-    , HH.div_ [ mkInput state.baz ( \v s -> s{ baz = v } ) ]
+    [ HH.div_ [ mkInput (SProxy::_"foo") state ]
+    , HH.div_ [ mkInput (SProxy::_"bar") state ]
+    , HH.div_ [ mkInput (SProxy::_"baz") state ]
     -- Print back to verify state
     , HH.div_ [ HH.text $ foldMap (\s -> s <> " ") [ state.foo, state.bar, state.baz ] ]
     ]
